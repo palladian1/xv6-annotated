@@ -29,6 +29,14 @@ I made a few assumptions in writing this:
 * You're reasonably familiar with (but not necessarily an expert on) C. I'm assuming you've used C at the level of something like CS 50, but not much more beyond that. If you haven't, don't try to learn C by reading the xv6 code or doing the OSTEP projects. Unfortunately, C isn't the kind of language you can pick up on the fly; it has way too many pitfalls. It's also a really bad idea to learn it from online tutorials; they're usually filled with mistakes. Use a book like *C Programming: A Modern Approach*, or *Modern C*. (Yes, I think *The C Programming Language* is great, but I also think it's too short and doesn't go over everything you need for xv6 and OSTEP.)
 * You've taken a course like Nand2Tetris or CS:APP, or you understand the basics of computer architecture and systems programming. You don't need to know any x86-specific details -- I'll talk about those along the way -- but it can't hurt either.
 
+I recommend reading the posts in order; I'll assume you've read all the previous
+posts in any later ones. Let me know if you find any errors or if you have any
+suggestions to improve them!
+
+Many thanks to @spamegg from OSSU for the many hours spent reading the source
+code with me and helping me wrangle the OSTEP projects and improve their docs
+and test scripts to work for other OSSU students!
+
 ## Contents
 
 1. [Das Boot](boot.md)
@@ -49,3 +57,25 @@ I made a few assumptions in writing this:
 16. User Space: C Library and Utilities
 
 ## License
+
+The xv6 software is:
+
+Copyright (c) 2006-2018 Franz Kaashoek, Robert Morris, Russ Cox,
+						Massachusetts Institute of Technology
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
