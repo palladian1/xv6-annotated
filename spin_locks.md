@@ -19,9 +19,9 @@ appreciate it as we go along. If you're like me, you might also see the code use
 locks when you wouldn't have thought they were needed, and then you'll come to
 appreciate just how clever the xv6 authors are.
 
-First off, stop reading this and go watch the last few minutes of the CS 50 2021
-lecture on SQL; the discussion of data races and locks starts at 2:26:00. I'm
-serious, go watch it right now; this post will still be here.
+First off, stop reading this and go watch the discussion of data races and locks
+in [the last few minutes of the CS 50 2021 lecture on SQL](https://www.youtube.com/watch?v=LzElj46saa8&t=8762s).
+I'm serious, go watch it right now; this post will still be here.
 
 Okay, I'm gonna assume you've seen it now; you should have a decent sense of the
 main issues with data races and how locks solve them. But the CS 50 lecture
@@ -151,7 +151,8 @@ been carefully written so that the lock acquisition order is always consistent.
 
 ## spinlock.c
 
-xv6's spin-locks are set up as a `struct spinlock`, defined in [spinlock.h](https://github.com/mit-pdos/xv6-public/blob/master/spinlock.h). The
+xv6's spin-locks are set up as a `struct spinlock`, defined in
+[spinlock.h](https://github.com/mit-pdos/xv6-public/blob/master/spinlock.h). The
 `locked` field acts as the boolean variable to determine whether the lock is
 held; the other fields are for debugging, since we can expect concurrency issues
 to be the one of the most common causes of bugs in the kernel code because,
@@ -266,7 +267,8 @@ void acquire(struct spinlock *lk)
 ```
 
 Next up, we've gotta acquire the lock using the atomic `xchg` instruction,
-defined in [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h). Like we said before, the trick is to atomically set `locked`
+defined in [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h).
+Like we said before, the trick is to atomically set `locked`
 to 1 while returning the old value. If the returned old value is 1, that
 means it was already 1 before we got to it, so it's currently being held and we
 can't acquire it yet -- gotta spin. But if the returned old value is 0, that
