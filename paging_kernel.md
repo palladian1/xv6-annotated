@@ -3,7 +3,7 @@
 We've already talked *plenty* about virtual memory, and I bet you're probably so
 over `entrypgdir` by now; let's wrap up its story and get rid of it!
 
-The "vm.c" file is HUGE; only "proc.c" and "sysfile.c" match its length. Some
+The [vm.c](https://github.com/mit-pdos/xv6-public/blob/master/vm.c) file is HUGE; only [proc.c](https://github.com/mit-pdos/xv6-public/blob/master/proc.c) and [sysfile.c](https://github.com/mit-pdos/xv6-public/blob/master/sysfile.c) match its length. Some
 parts deal with the general paging implementation; we'll look at those here. The
 rest handles the details of paging for processes and user code, we'll need to
 know a bit more about processes in xv6 for that.
@@ -11,7 +11,7 @@ know a bit more about processes in xv6 for that.
 ## vm.c
 
 After the include directives for the preprocessor, we have a declaraction for
-an external symbol defined in "kernel.ld". This one is the beginning of the
+an external symbol defined in [kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld). This one is the beginning of the
 data section for the kernel.
 ```c
 extern char data[];
@@ -19,7 +19,7 @@ extern char data[];
 
 Next we have a definition for a pointer to a global page directory: this is the
 fancy new one that's gonna replace `entrypgdir`. Note that `pde_t` is a type for
-page directory entries defined in "types.h"; it's just a type alias for `int`.
+page directory entries defined in [types.h](https://github.com/mit-pdos/xv6-public/blob/master/types.h); it's just a type alias for `int`.
 ```c
 pde_t *kpgdir;
 ```
@@ -52,13 +52,13 @@ Each processor has its own GDT, so we're gonna need to call this function once
 per CPU. First we figure out which CPU we're on with with the `cpuid()` function
 that we'll see later on; for now it... (drumroll)... gets the CPU's ID. Then we
 look that up in a global table of CPUs (there's an `extern` declaration for this
-in the included "proc.h") and store it in a `struct cpu`; we saw that before in
+in the included [proc.h](https://github.com/mit-pdos/xv6-public/blob/master/proc.h)) and store it in a `struct cpu`; we saw that before in
 the spin-lock code, but we'll get around to talking about it more later.
 ```c
 void seginit(void)
 {
-	struct cpu *c = &cpus[cpuid()];
-	// ...
+    struct cpu *c = &cpus[cpuid()];
+    // ...
 }
 ```
 
@@ -73,12 +73,12 @@ identity map for all virtual memory from 0 to 4 GB (0xffff_ffff).
 ```c
 void seginit(void)
 {
-	// ...
-	c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
-	c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
-	c->gdt[SEG_UCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, DPL_USER);
-	c->gdt[SEG_UDATA] = SEG(STA_W, 0, 0xffffffff, DPL_USER);
-	// ...
+    // ...
+    c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
+    c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
+    c->gdt[SEG_UCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, DPL_USER);
+    c->gdt[SEG_UDATA] = SEG(STA_W, 0, 0xffffffff, DPL_USER);
+    // ...
 }
 ```
 The only difference between the `SEG` macro used here and the `SEG_ASM` one from
@@ -89,8 +89,8 @@ x86 instruction `lgdt`.
 ```c
 void seginit(void)
 {
-	// ...
-	lgdt(c->gdt, sizeof(c->gdt));
+    // ...
+    lgdt(c->gdt, sizeof(c->gdt));
 }
 ```
 
@@ -109,7 +109,7 @@ way, so if we want to figure out where those go, we'll need a function for it.
 
 In C, using the `static` keyword before a function limits its scope and makes it
 visible only within its own file. The function returns a `pte_t *`, a pointer to
-a page table entry (the type is defined in "mmu.h" as a type alias for `uint`).
+a page table entry (the type is defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) as a type alias for `uint`).
 
 Its arguments are a pointer to a page directory, a virtual address, and `alloc`
 (a boolean variable, but as an `int` instead of `bool`). This `alloc` lets the
@@ -125,7 +125,7 @@ syntax is the worst? No, never...
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
+    // ...
 }
 ```
 
@@ -139,8 +139,8 @@ page directory index and using that to get the page directory entry.
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	pde_t *pde = &pgdir[PDX(va)];
-	// ...
+    pde_t *pde = &pgdir[PDX(va)];
+    // ...
 }
 ```
 
@@ -152,14 +152,14 @@ aren't mapped in order to save space. So we have to check whether `*pde` has the
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	pte_t *pgtab;
-	if (*pde & PTE_P) {
-		// ...
-	} else {
-		// ...
-	}
-	// ...
+    // ...
+    pte_t *pgtab;
+    if (*pde & PTE_P) {
+        // ...
+    } else {
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -173,14 +173,14 @@ address with the `P2V()` macro.
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	pte_t *pgtab;
-	if (*pde & PTE_P) {
-		pgtab = (pte_t *) P2V(PTE_ADDR(*pde));
-	} else {
-		// ...
-	}
-	// ...
+    // ...
+    pte_t *pgtab;
+    if (*pde & PTE_P) {
+        pgtab = (pte_t *) P2V(PTE_ADDR(*pde));
+    } else {
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -198,17 +198,17 @@ that variable's value in a single statement.
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	pte_t *pgtab;
-	if (*pde & PTE_P) {
-		// ...
-	} else {
-		if (!alloc || (pgtab = (pte_t *) kalloc()) == 0) {
-			return 0;
-		}
-		// ...
-	}
-	// ...
+    // ...
+    pte_t *pgtab;
+    if (*pde & PTE_P) {
+        // ...
+    } else {
+        if (!alloc || (pgtab = (pte_t *) kalloc()) == 0) {
+            return 0;
+        }
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -219,16 +219,16 @@ it.
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	pte_t *pgtab;
-	if (*pde & PTE_P) {
-		// ...
-	} else {
-		// ...
-		memset(pgtab, 0, PGSIZE);
-		// ...
-	}
-	// ...
+    // ...
+    pte_t *pgtab;
+    if (*pde & PTE_P) {
+        // ...
+    } else {
+        // ...
+        memset(pgtab, 0, PGSIZE);
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -243,15 +243,15 @@ here at the page directory entry.
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	pte_t *pgtab;
-	if (*pde & PTE_P) {
-		// ...
-	} else {
-		// ...
-		*pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
-	}
-	// ...
+    // ...
+    pte_t *pgtab;
+    if (*pde & PTE_P) {
+        // ...
+    } else {
+        // ...
+        *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
+    }
+    // ...
 }
 ```
 This probably isn't the safest thing ever, because we're saying that only the
@@ -264,8 +264,8 @@ index from the middle bits of `va`:
 ```c
 static pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
-	// ...
-	return &pgtab[PTX(va)];
+    // ...
+    return &pgtab[PTX(va)];
 }
 ```
 
@@ -286,9 +286,9 @@ page-aligned.
 ```c
 static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
-	char *a = (char *) PGROUNDDOWN((uint) va);
-	char *last = (char *) PGROUNDDOWN(((uint) va) + size - 1);
-	// ...
+    char *a = (char *) PGROUNDDOWN((uint) va);
+    char *last = (char *) PGROUNDDOWN(((uint) va) + size - 1);
+    // ...
 }
 ```
 
@@ -302,16 +302,16 @@ clear, but oh well, I didn't write this.
 ```c
 static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
-	// ...
-	for (;;) {
-		// ...
-		if (a == last) {
-			break;
-		}
-		a += PGSIZE;
-		pa += PGSIZE;
-	}
-	// ...
+    // ...
+    for (;;) {
+        // ...
+        if (a == last) {
+            break;
+        }
+        a += PGSIZE;
+        pa += PGSIZE;
+    }
+    // ...
 }
 ```
 
@@ -323,15 +323,15 @@ time however, we'll return -1 for failure and 0 for success, because why not?
 ```c
 static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
-	// ...
-	for (;;) {
-		pte_t *pte;
-		if ((pte = walkpgdir(pgdir, a, 1)) == 0) {
-			return -1;
-		}
-		// ...
-	}
-	return 0;
+    // ...
+    for (;;) {
+        pte_t *pte;
+        if ((pte = walkpgdir(pgdir, a, 1)) == 0) {
+            return -1;
+        }
+        // ...
+    }
+    return 0;
 }
 ```
 
@@ -340,15 +340,15 @@ if a page has already been allocated, we'll just flip out in rage and panic.
 ```c
 static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
-	// ...
-	for (;;) {
-		// ...
-		if (*pte & PTE_P) {
-			panic("remap");
-		}
-		// ...
-	}
-	// ...
+    // ...
+    for (;;) {
+        // ...
+        if (*pte & PTE_P) {
+            panic("remap");
+        }
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -358,13 +358,13 @@ in the page table. Then we're done!
 ```c
 static int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
-	// ...
-	for (;;) {
-		// ...
-		*pte = pa | perm | PTE_P;
-		// ...
-	}
-	// ...
+    // ...
+    for (;;) {
+        // ...
+        *pte = pa | perm | PTE_P;
+        // ...
+    }
+    // ...
 }
 ```
 
@@ -386,7 +386,7 @@ kernel expects to find into a fresh page directory for that process. Those are:
 memory-mapped I/O device space from physical address 0 to 0x10_0000 (the boot
 loader is also here, but we don't need it any more), kernel code and read-only
 data from 0x10_0000 to the physical address of `data` (one of the symbols
-defined in "kernel.ld"), kernel data the rest of physical memory from there to
+defined in [kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld)), kernel data the rest of physical memory from there to
 `PHYSTOP`, and more I/O devices from 0xFE00_0000 and up. Each of these ranges
 needs its own permissions too.
 
@@ -396,15 +396,15 @@ and the permissions; then the mappings will get stored in a static global
 variable `kmap`... oh come on, what fresh hell is THIS?
 ```c
 static struct kmap {
-	void *virt;
-	uint phys_start;
-	uint phys_end;
-	int perm;
+    void *virt;
+    uint phys_start;
+    uint phys_end;
+    int perm;
 } kmap[] = {
-	{ (void *)KERNBASE, 0, EXTMEM, PTE_W },
-	{ (void *)KERNLINK, V2P(KERNLINK), V2P(data), 0 },
-	{ (void *)data, V2P(data), PHYSTOP, PTE_W },
-	{ (void *)DEVSPACE, DEVSPACE, 0, PTE_W }.
+    { (void *)KERNBASE, 0, EXTMEM, PTE_W },
+    { (void *)KERNLINK, V2P(KERNLINK), V2P(data), 0 },
+    { (void *)data, V2P(data), PHYSTOP, PTE_W },
+    { (void *)DEVSPACE, DEVSPACE, 0, PTE_W }.
 };
 ```
 
@@ -416,10 +416,10 @@ Then it does that thing again where we simultaneously define a `struct` type and
 define a variable of that type. So the type is
 ```c
 struct kmap {
-	void *virt;
-	uint phys_start;
-	uint phys_end;
-	int perm;
+    void *virt;
+    uint phys_start;
+    uint phys_end;
+    int perm;
 };
 ```
 
@@ -459,12 +459,12 @@ of the garbage values we wrote when we freed it.
 ```c
 pde_t *setupkvm(void)
 {
-	pde_t *pgdir;
-	if ((pgdir = (pde_t *) kalloc()) == 0) {
-		return 0;
-	}
-	memset(pgdir, 0, PGSIZE);
-	// ...
+    pde_t *pgdir;
+    if ((pgdir = (pde_t *) kalloc()) == 0) {
+        return 0;
+    }
+    memset(pgdir, 0, PGSIZE);
+    // ...
 }
 ```
 
@@ -473,11 +473,11 @@ should be below that; this is as good a place as any to make sure.
 ```c
 pde_t *setupkvm(void)
 {
-	// ...
-	if (P2V(PHYSTOP) > (void *) DEVSPACE) {
-		panic("PHYSTOP too high");
-	}
-	// ...
+    // ...
+    if (P2V(PHYSTOP) > (void *) DEVSPACE) {
+        panic("PHYSTOP too high");
+    }
+    // ...
 }
 ```
 
@@ -489,19 +489,19 @@ just made, in case any of them fails.
 ```c
 pde_t *setupkvm(void)
 {
-	// ...
-	struct kmap *k;
-	for (k = kmap; k < &kmap[NELEM(kmap)]; k++) {
-		if (mappages(pgdir,
-					k->virt,
-					k->phys_end - k->phys_start,
-					(uint) k->phys_start,
-					k->perm) < 0) {
-			freevm(pgdir);
-			return 0;
-		}
-	}
-	return pgdir;
+    // ...
+    struct kmap *k;
+    for (k = kmap; k < &kmap[NELEM(kmap)]; k++) {
+        if (mappages(pgdir,
+                k->virt,
+                k->phys_end - k->phys_start,
+                (uint) k->phys_start,
+                k->perm) < 0) {
+            freevm(pgdir);
+            return 0;
+        }
+    }
+    return pgdir;
 }
 ```
 Let's check out that for loop: `k` is a pointer to a `struct kmap`, and `kmap`
@@ -531,7 +531,7 @@ with the assembly instruction `lcr3`.
 ```c
 void switchkvm(void)
 {
-	lcr3(V2P(kpgdir));
+    lcr3(V2P(kpgdir));
 }
 ```
 
@@ -546,8 +546,8 @@ call `switchkvm()` to load it into the paging hardware.
 ```c
 void kvmalloc(void)
 {
-	kpgdir = setupkvm();
-	switchkvm();
+    kpgdir = setupkvm();
+    switchkvm();
 }
 ```
 
@@ -557,7 +557,7 @@ kids now.
 ## Summary
 
 So far, it's been a serious odyssey just to move from no paging in the boot
-loader, to super basic paging with `entrypgdir` in "entry.S", to `kpgdir` now.
+loader, to super basic paging with `entrypgdir` in [entry.S](https://github.com/mit-pdos/xv6-public/blob/master/entry.S), to `kpgdir` now.
 Along the way, we've looked at code to allocate and free pages and install new
 mappings in page directories and page tables. That'll come in handy when we look
 at processes next; the virtual memory story still isn't over.

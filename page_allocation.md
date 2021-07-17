@@ -54,14 +54,14 @@ to the linker and it'll match up the definitions and calls.
 
 In this case if you try looking for the place where `end` is defined in the C or
 assembly code, you're gonna be disappointed. Turns out it's actually defined in
-"kernel.ld", remember? Back then, we said it was gonna be located at the very
+[kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld), remember? Back then, we said it was gonna be located at the very
 first memory address right after the end of the kernel code and data in memory.
 We're about to see why it's needed.
 
 Next up, we define a new `struct` type:
 ```c
 struct run {
-	struct run *next;
+    struct run *next;
 };
 ```
 Hmm, the only member of this `struct run` is a pointer to another `struct run`.
@@ -73,9 +73,9 @@ Last thing before we get to the functions: we define another `struct` type and
 declare the global variable `kmem` to be of that type.
 ```c
 struct {
-	struct spinlock lock;
-	int use_lock;
-	struct run *freelist;
+    struct spinlock lock;
+    int use_lock;
+    struct run *freelist;
 } kmem;
 ```
 The syntax here is the usual C thing where we say the type of a variable, then
@@ -117,10 +117,10 @@ anyway).
 ```c
 void kfree(char *v)
 {
-	if ((uint) v % PGSIZE || v < end || V2P(v) >= PHYSTOP) {
-		panic("kfree");
-	}
-	// ...
+    if ((uint) v % PGSIZE || v < end || V2P(v) >= PHYSTOP) {
+        panic("kfree");
+    }
+    // ...
 }
 ```
 
@@ -141,16 +141,16 @@ sooner than it would otherwise.
 ```c
 void kfree(char *v)
 {
-	// ...
-	memset(v, 1, PGSIZE);
-	// ...
+    // ...
+    memset(v, 1, PGSIZE);
+    // ...
 }
 ```
-You might be familiar with `memset()` from the C standard library in "string.h",
+You might be familiar with `memset()` from the C standard library in *string.h*,
 but we can't risk using standard library functions here because they assume the
 code will be provided by the OS, and the implementation might require any of a
 million features we haven't implemented yet. So we have to make our own version
-for the kernel in "string.c". We'll get around to looking at that code later on
+for the kernel in [string.c](https://github.com/mit-pdos/xv6-public/blob/master/string.c). We'll get around to looking at that code later on
 in an optional detour, but for now just know that it sets the memory starting at
 `v` and continuing for `PGSIZE` bytes to hold a bunch of repeated 1s.
 
@@ -169,11 +169,11 @@ boolean that will tell us whether we need a lock right now or not.
 ```c
 void kfree(char *v)
 {
-	// ...
-	if (kmem.use_lock) {
-		acquire(&kmem.lock);
-	}
-	// ...
+    // ...
+    if (kmem.use_lock) {
+        acquire(&kmem.lock);
+    }
+    // ...
 }
 ```
 
@@ -185,11 +185,11 @@ of a singly-linked list.
 ```c
 void kfree(char *v)
 {
-	// ...
-	struct run *r = (struct run *) v;
-	r->next = kmem.freelist;
-	kmem.freelist = r;
-	// ...
+    // ...
+    struct run *r = (struct run *) v;
+    r->next = kmem.freelist;
+    kmem.freelist = r;
+    // ...
 }
 ```
 
@@ -202,10 +202,10 @@ can release the lock.
 ```c
 void kfree(char *v)
 {
-	// ...
-	if (kmem.use_lock) {
-		release(&kmem.lock);
-	}
+    // ...
+    if (kmem.use_lock) {
+        release(&kmem.lock);
+    }
 }
 ```
 
@@ -216,10 +216,10 @@ lock first, if we need one.
 ```c
 char *kalloc(void)
 {
-	if (kmem.use_lock) {
-		acquire(&kmem.lock);
-	}
-	// ...
+    if (kmem.use_lock) {
+        acquire(&kmem.lock);
+    }
+    // ...
 }
 ```
 
@@ -238,12 +238,12 @@ should always be followed by checking whether the returned pointer is null.
 ```c
 char *kalloc(void)
 {
-	// ...
-	struct run *r = kmem.freelist;
-	if (r) {
-		kmem.freelist = r->next;
-	}
-	// ...
+    // ...
+    struct run *r = kmem.freelist;
+    if (r) {
+        kmem.freelist = r->next;
+    }
+    // ...
 }
 ```
 
@@ -251,10 +251,10 @@ Okay, so now we just release the lock, and we're done!
 ```c
 char *kalloc(void)
 {
-	// ...
-	if (kmem.use_lock) {
-		release(&kmem.lock);
-	}
+    // ...
+    if (kmem.use_lock) {
+        release(&kmem.lock);
+    }
 }
 ```
 
@@ -272,8 +272,8 @@ align it to a page boundary by rounding up, then cast that to a `char *`.
 ```c
 void freerange(void *vstart, void *vend)
 {
-	char *p = (char *) PGROUNDUP((uint) vstart);
-	// ...
+    char *p = (char *) PGROUNDUP((uint) vstart);
+    // ...
 }
 ```
 
@@ -282,10 +282,10 @@ until we reach or pass `vend`, freeing pages as we go.
 ```c
 void freerange(void *vstart, void *vend)
 {
-	// ...
-	for (; p + PGSIZE <= (char *) vend; p += PGSIZE) {
-		kfree(p);
-	}
+    // ...
+    for (; p + PGSIZE <= (char *) vend; p += PGSIZE) {
+        kfree(p);
+    }
 }
 ```
 Done, next.
@@ -333,15 +333,15 @@ memory. `main()` calls `kinit1()` with arguments to free the range from `end` to
 ```c
 void kinit1(void *vstart, void *vend)
 {
-	initlock(&kmem.lock, "kmem");
-	kmem.use_lock = 0;
-	freerange(vstart, vend);
+    initlock(&kmem.lock, "kmem");
+    kmem.use_lock = 0;
+    freerange(vstart, vend);
 }
 
 void kinit2(void *vstart, void *vend)
 {
-	freerange(vstart, vend);
-	kmem.use_lock = 1;
+    freerange(vstart, vend);
+    kmem.use_lock = 1;
 }
 ```
 

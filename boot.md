@@ -1,10 +1,10 @@
-# Das Boot
-
-## The Boot Process
+# DAS BOOT
 
 First things first: in order for a computer to run xv6, we need to load it from
 disk into memory and tell the processor to start running it. So how does this
 all happen?
+
+## The Boot Process
 
 When you press the power button, the hardware gets initialized by a piece of
 firmware called the BIOS (Basic Input/Output System) that comes pre-installed on
@@ -57,7 +57,7 @@ First we include some header files to use some constants; I'll point them out
 later. Next up, we gotta tell the assembler to generate 16-bit code, and set a
 global label to tell the BIOS where to start executing code.
 ```asm
-.code16			# Tell compiler to generate 16-bit code
+.code16         # Tell compiler to generate 16-bit code
 .globl start
 start:
 ```
@@ -70,7 +70,7 @@ clue how to handle those if they happen, so let's go ahead and turn those off.
 There's an x86 instruction to disable them by clearing the interrupt flag in
 the CPU's flags register.
 ```asm
-	cli
+    cli
 ```
 
 Now we've gotta handle some of x86's quirks. First off, we're gonna need 20-bit
@@ -83,10 +83,10 @@ about the others, so we have to clear them ourselves. We're not using `%eax` for
 anything yet, so we'll use that to clear the others. The `w` at the end of `xorw`
 and `movw` means we're operating on 16-bit words.
 ```asm
-	xorw	%ax,%ax
-	movw	%ax,%ds		# Data segment
-	movw	%ax,%es		# Extra segment
-	movw	%ax,%ss		# Stack segment
+    xorw    %ax,%ax
+    movw    %ax,%ds     # Data segment
+    movw    %ax,%es     # Extra segment
+    movw    %ax,%ss     # Stack segment
 ```
 
 This next part is a total hack for backwards-compatibility: sometimes a virtual
@@ -101,20 +101,20 @@ to line high. I don't know. Don't ask me why. The output ports are 0x64 and
 will make this all work.
 ```asm
 seta20.1:
-	inb		$0x64,%al	# Wait for not busy
-	testb	$0x2,%al
-	jnz		seta20.1
+    inb     $0x64,%al   # Wait for not busy
+    testb   $0x2,%al
+    jnz     seta20.1
 
-	movb	$0xd1,%al	# 0xD1 -> port 0x64
-	outb	%al,$0x64
+    movb    $0xd1,%al   # 0xD1 -> port 0x64
+    outb    %al,$0x64
 
 seta20.2:
-	inb		$0x64,%al	# Wait for not busy
-	testb	$0x2,%al
-	jnz		seta20.2
+    inb     $0x64,%al   # Wait for not busy
+    testb   $0x2,%al
+    jnz     seta20.2
 
-	movb	$0xdf,%al	# 0xDF -> port 0x60
-	outb	%al,$0x60
+    movb    $0xdf,%al   # 0xDF -> port 0x60
+    outb    %al,$0x60
 ```
 
 ### Segmentation
@@ -127,22 +127,22 @@ important for the rest of the boot loader code as well as the OS, so you're
 gonna have to bear with me for this maelstrom of x86-specific details.
 
 The x86 architecture does the conversion in two steps: first segmentation, then
-paging. A virtual address starts off life as a "logical address". Segmentation
-converts that to a "linear address", and paging converts that to a physical one.
+paging. A virtual address starts off life as a *logical address*. Segmentation
+converts that to a *linear address*, and paging converts that to a physical one.
 
-A logical address consists of a 20-bit "segment selector" and a 12-bit offset,
+A logical address consists of a 20-bit *segment selector* and a 12-bit offset,
 with the segment bits before the offset bits, like `segment:offset`. The CPU's
 segmentation hardware uses those segment bits to pick one of those four segment
-registers we cleared earlier, which acts as an index into a "Global Descriptor
-Table" or GDT. Each entry of this GDT tells you where that segment is found in
+registers we cleared earlier, which acts as an index into a *Global Descriptor
+Table* or GDT. Each entry of this GDT tells you where that segment is found in
 memory using a base physical address and a virtual address for the maximum or
 limit.
 
 The GDT entry also has some permission bits for that segment; the segmentation
 hardware will check whether each address can be written to and whether the
 process generating the virtual address has the right permissions to access it.
-These checks compare the GDT entry's "Descriptor Privilege Levels", also known
-as "ring levels", against the "Current Privilege Level". x86 has four privilege
+These checks compare the GDT entry's *Descriptor Privilege Levels*, also known
+as *ring levels*, against the *Current Privilege Level*. x86 has four privilege
 levels (0-3), so if you've ever heard of the kernel operating in ring 0 or user
 code in ring 3, this is where it comes from.
 
@@ -160,7 +160,7 @@ have to stick this GDT somewhere in our code so we can point the CPU to it, so
 we'll put it at the end and throw a `gdtdesc` label on it. Now we can tell the
 CPU to load it up with a special x86 instruction for that.
 ```asm
-	lgdt	gdtdesc
+    lgdt    gdtdesc
 ```
 
 ### Protected Mode
@@ -168,11 +168,12 @@ CPU to load it up with a special x86 instruction for that.
 Good news, everyone! We're finally ready to turn on protected mode, which we do
 by setting the zero bit of the `%cr0` control register. Note that the `l` at the
 end of the instructions here means we're now using long words, i.e. 32 bits;
-`CR0_PE` is defined in the "mmu.h" header file as 0x1.
+`CR0_PE` is defined in the [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h)
+header file as 0x1.
 ```asm
-	movl	%cr0, %eax		# Copy %cr0 into %eax
-	orl		$CR0_PE, %eax	# Set bit 0
-	movl	%ax, %cr0		# Copy it back
+    movl    %cr0, %eax      # Copy %cr0 into %eax
+    orl     $CR0_PE, %eax   # Set bit 0
+    movl    %ax, %cr0       # Copy it back
 ```
 
 Oh wait, I lied. Enabling protection mode like we just did doesn't change how
@@ -182,26 +183,26 @@ settings. We can do that by using a long jump instruction, which lets us specify
 a code segment selector. We're just gonna jump to the very next line anyway, but
 in doing so we'll force the CPU to start using the GDT, which describes a 32-bit
 code segment, so *now* we're finally in 32-bit mode! Here, `SEG_KCODE` is a
-constant defined in "mmu.h" as segment 1, for `%cs`; we bitshift it left by 3.
+constant defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) as segment 1, for `%cs`; we bitshift it left by 3.
 ```asm
-	ljmp	$(SEG_KCODE<<3), $start32
+    ljmp    $(SEG_KCODE<<3), $start32
 ```
 
 First we signal the compiler to start generating 32-bit code. Then we initialize
 the data, extra, and stack segment registers to point to the `SEG_KDATA` entry
-of the GDT; that constant is defined in "mmu.h" as the segment for the kernel
+of the GDT; that constant is defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) as the segment for the kernel
 data and stack. We're not required to set up `%fs` and `%gs`, so we'll just zero
 them.
 ```asm
-.code 32	# Tell assembler to generate 32-bit code now
+.code 32    # Tell assembler to generate 32-bit code now
 start32:
-	movw	$(SEG_KDATA<<3), %ax	# Our data segment selector
-	movw	%ax, %ds	# Data segment
-	movw	%ax, %es	# Extra segment
-	movw	%ax, %ss	# Stack segment
-	movw	$0, %ax		# Zero the segments not ready for use
-	movw	%ax, %fs
-	movw	%ax, %gs
+    movw    $(SEG_KDATA<<3), %ax    # Our data segment selector
+    movw    %ax, %ds    # Data segment
+    movw    %ax, %es    # Extra segment
+    movw    %ax, %ss    # Stack segment
+    movw    $0, %ax     # Zero the segments not ready for use
+    movw    %ax, %fs
+    movw    %ax, %gs
 ```
 
 ### The Kernel Stack
@@ -222,15 +223,15 @@ from there, toward 0x0000 and away from the boot loader. Remember how back in
 the beginning, we started off the assembly code with a `start` label? That means
 that `start` is conveniently located at 0x7C00.
 ```asm
-	movl	$start, %esp
+    movl    $start, %esp
 ```
 
 And we're done with assembly! Time to move on to C code for the rest of the boot
 loader. We'll take over with a C function called `bootmain()`, which should
 never return. The linker will take care of connecting the call here to its
-definition in "bootmain.c".
+definition in [bootmain.c](https://github.com/mit-pdos/xv6-public/blob/master/bootmain.c).
 ```asm
-	call	bootmain
+    call    bootmain
 ```
 
 ### Handling Errors
@@ -243,13 +244,13 @@ emulator like Bochs or QEMU, we'll trigger a breakpoint and loop. Bochs listens
 on port 0x8A00, so we can transfer control back to it there; this wouldn't do
 anything on real hardware.
 ```asm
-	movw	$0x8a00, %ax	# 0x8a00 -> port 0x8a00
-	movw	%ax, %dx
-	outw	%ax, %dx
-	movw	$0x8ae0, %ax	# 0x8ae0 -> port 0x8a00
-	outw	%ax, %dx
+    movw    $0x8a00, %ax    # 0x8a00 -> port 0x8a00
+    movw    %ax, %dx
+    outw    %ax, %dx
+    movw    $0x8ae0, %ax    # 0x8ae0 -> port 0x8a00
+    outw    %ax, %dx
 spin:
-	jmp		spin			# loop forever
+    jmp     spin            # loop forever
 ```
 
 ### The Global Descriptor Table
@@ -260,22 +261,22 @@ deliver on that promise now by defining the GDT here.
 
 x86 expects that the GDT will be aligned on a 32-bit boundary, so we tell the
 assembler to do that. Then we use the macros `SEG_NULLASM` and `SEG_ASM` defined
-in "asm.h" to create three segments: a null segment, a segment for executable
+in [asm.h](https://github.com/mit-pdos/xv6-public/blob/master/asm.h) to create three segments: a null segment, a segment for executable
 code, and another for writeable data. The null segment has all zeroes; the first
 argument to `SEG_ASM` has the permission bits, the second is the physical base
 address, and the third is the maximum virtual address. As we said before, xv6
 relies mostly on paging, so we set the segments to go from 0 to 4 GB so they
 identity-map all the memory.
 ```asm
-.p2align 2		# force 4-byte alignment
+.p2align 2      # force 4-byte alignment
 gdt:
-	SEG_NULLASM								# null segment
-	SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)	# code segment
-	SEG_ASM(STA_W, 0x0, 0xffffffff)			# data segment
+    SEG_NULLASM                             # null segment
+    SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)   # code segment
+    SEG_ASM(STA_W, 0x0, 0xffffffff)         # data segment
 
 gdtdesc:
-	.word	(gdtdesc - gdt - 1)		# sizeof(gdt) - 1
-	.long	gdt						# address of gdt
+    .word   (gdtdesc - gdt - 1)     # sizeof(gdt) - 1
+    .long   gdt                     # address of gdt
 ```
 
 ## bootmain.c
@@ -288,8 +289,8 @@ memory. Let's start off by looking at `waitdisk()`.
 ```c
 void waitdisk(void)
 {
-	while ((inb(0x1F7) & 0xC0) != 0x40)
-		;
+    while ((inb(0x1F7) & 0xC0) != 0x40)
+        ;
 }
 ```
 HEAD. DESK. Why all the magic numbers? At least we're lucky that the name makes
@@ -322,7 +323,7 @@ seventh bit (i.e., 0x80) is the BSY bit, which if set says the disk is busy.
 
 Since interrupts are disabled, we'll have to manually poll the status port in an
 infinite loop until the BSY bit is not set but the RDY bit is: `inb()` is a C
-wrapper (defined in "x86.h") for the x86 assembly instruction `inb`, which reads
+wrapper (defined in [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/bootmain.c)) for the x86 assembly instruction `inb`, which reads
 from a port. We don't care about any of the other status flags, so we'll get rid
 of them by bitwise-ANDing the result with 0xC0 = 0x40 + 0x80. If the result of
 that is 0x40, then only the RDY bit is set and we're good to go.
@@ -333,18 +334,18 @@ Phew. That was a lot for just one line of code.
 ```c
 void readsect(void *dst, uint offset)
 {
-	// Issue command
-	waitdisk();
-	outb(0x1F2, 1);
-	outb(0x1F3, offset);
-	outb(0x1F4, offset >> 8);
-	outb(0x1F5, offset >> 16);
-	outb(0x1F6, (offset >> 24) | 0xE0);
-	outb(0x1F7, 0x20);
+    // Issue command
+    waitdisk();
+    outb(0x1F2, 1);
+    outb(0x1F3, offset);
+    outb(0x1F4, offset >> 8);
+    outb(0x1F5, offset >> 16);
+    outb(0x1F6, (offset >> 24) | 0xE0);
+    outb(0x1F7, 0x20);
 
-	// Read data
-	waitdisk();
-	insl(0x1F0, dst, SECTSIZE/4);
+    // Read data
+    waitdisk();
+    insl(0x1F0, dst, SECTSIZE/4);
 }
 ```
 If you skipped the last section: this function reads a sector (which in the
@@ -357,11 +358,11 @@ RDY bit, then we send some stuff over ports 0x1F2 through 0x1F7, which we know
 are the command registers for the primary ATA bus.
 
 Note that `uint` is just a type alias for C's `unsigned int`, defined in the
-header file "types.h". The `offset` argument is in bytes, and determines which
+header file [types.h](https://github.com/mit-pdos/xv6-public/blob/master/bootmain.c). The `offset` argument is in bytes, and determines which
 sector we're gonna read; sector 0 has to hold the boot loader so the BIOS can
 find it, and in xv6 the kernel will start on disk at sector 1.
 
-`outb()` is another C wrapper for an x86 instruction from "x86.h"; this one's
+`outb()` is another C wrapper for an x86 instruction from [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h); this one's
 the opposite of `inb()` because it sends data out to a port. The disk controller
 register at port 0x1F2 determines how many sectors we're gonna read. Ports 0x1F3
 through 0x1F6 are where the sector's address goes. If you *really* must know
@@ -379,25 +380,25 @@ The `l` at the end means it reads one long-word (32 bits) at a time.
 ```c
 void readseg(uchar *pa, uint count, uint offset)
 {
-	uchar *epa = pa + count;
+    uchar *epa = pa + count;
 
-	// Round down to sector boundary
-	pa -= offset % SECTSIZE;
+    // Round down to sector boundary
+    pa -= offset % SECTSIZE;
 
-	// Translate from bytes to sectors; kernel starts at sector 1
-	offset = (offset / SECTSIZE) + 1;
+    // Translate from bytes to sectors; kernel starts at sector 1
+    offset = (offset / SECTSIZE) + 1;
 
-	// If this is too slow, we could read lots of sectors at a time. We'd write
-	// more to memory than asked, but it doesn't matter -- we load in increasing
-	// order.
-	for (; pa < epa; pa += SECTSIZE, offset++) {
-		readsect(pa, offset);
-	}
+    // If this is too slow, we could read lots of sectors at a time. We'd write
+    // more to memory than asked, but it doesn't matter -- we load in increasing
+    // order.
+    for (; pa < epa; pa += SECTSIZE, offset++) {
+        readsect(pa, offset);
+    }
 }
 ```
 Okay, finally, we're done with assembly and disk specs. We're gonna read `count`
 bytes starting from `offset` into physical address `pa`. Note that `uchar` is
-another type alias for `unsigned char` from "types.h"; this means that `pa` is a
+another type alias for `unsigned char` from [types.h](https://github.com/mit-pdos/xv6-public/blob/master/types.h); this means that `pa` is a
 pointer (which is 32 bits in x86) to some data where each piece is 1 byte.
 
 `epa` will point to the end of the part we want to read. Now, `count` might not
@@ -416,7 +417,7 @@ plenty of reasons to hate C, but I think the way it structures for loops is by
 far one of its most powerful features:
 ```c
 for (initialization; test condition; update statements) {
-	code
+    code
 }
 ```
 When evaluating the for loop, C first executes anything in the initialization.
@@ -472,7 +473,7 @@ The kernel (along with all the user-space programs) will be compiled and linked
 as ELF files, so `bootmain()` will have to parse the ELF header to find the
 program header table, then parse that to load each section into memory at the
 right address. xv6 uses a `struct elfhdr` and a `struct proghdr`, both defined
-in "elf.h", for this purpose.
+in [elf.h](https://github.com/mit-pdos/xv6-public/blob/master/elf.h), for this purpose.
 
 Okay, back to the boot loader to finish up now!
 
@@ -493,9 +494,9 @@ the pointer arithmetic in `readseg()` works out the way we want it to.
 ```c
 void bootmain(void)
 {
-	struct elfhdr *elf = (struct elfhdr *) 0x10000;
-	readseg((uchar *) elf, 4096, 0);
-	// ...
+    struct elfhdr *elf = (struct elfhdr *) 0x10000;
+    readseg((uchar *) elf, 4096, 0);
+    // ...
 }
 ```
 
@@ -508,11 +509,11 @@ in `bootasm.S` is ready to handle that with some Bochs breakpoints.
 ```c
 void bootmain(void)
 {
-	// ...
-	if (elf->magic != ELF_MAGIC) {
-		return;
-	}
-	// ...
+    // ...
+    if (elf->magic != ELF_MAGIC) {
+        return;
+    }
+    // ...
 }
 ```
 
@@ -523,10 +524,10 @@ that and `eph` to point to the end of the table.
 ```c
 void bootmain(void)
 {
-	// ...
-	struct proghdr *ph = (struct proghdr *) ((uchar *) elf + elf->phoff);
-	struct proghdr *eph = ph + elf->phnum;
-	// ...
+    // ...
+    struct proghdr *ph = (struct proghdr *) ((uchar *) elf + elf->phoff);
+    struct proghdr *eph = ph + elf->phnum;
+    // ...
 }
 ```
 
@@ -538,22 +539,22 @@ makes it automatically point at the next entry in the table.
 ```c
 void bootmain(void)
 {
-	// ...
-	for (; ph < eph; ph++) {
-		uchar *pa = (uchar *) ph->paddr;	// address to load section into
-		readseg(pa, ph->filesz, ph->off);	// read section from disk
+    // ...
+    for (; ph < eph; ph++) {
+        uchar *pa = (uchar *) ph->paddr;    // address to load section into
+        readseg(pa, ph->filesz, ph->off);   // read section from disk
 
-		// Check if the segment's size in memory is larger than the file image
-		if (ph->memsz > ph->filesz) {
-			stosb(pa + ph->filesz, 0, ph->memsz - ph->filesz);
-		}
-	}
-	// ...
+        // Check if the segment's size in memory is larger than the file image
+        if (ph->memsz > ph->filesz) {
+            stosb(pa + ph->filesz, 0, ph->memsz - ph->filesz);
+        }
+    }
+    // ...
 }
 ```
 That if statement at the end checks if the section's size in memory should be
 larger than its size in the file, in which case it calls `stosb()`, which is yet
-another C wrapper from "x86.h" for the x86 instruction `rep stosb`, which block
+another C wrapper from [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h) for the x86 instruction `rep stosb`, which block
 loads bytes into a string. It's used here to zero the rest of the memory space
 for that section. Okay, but why would we want to do that? Well, if the reason
 it's larger is because it has some uninitialized static variables, then we want
@@ -601,10 +602,10 @@ function, so this function will return back into the assembly boot loader code.
 ```c
 void bootmain(void)
 {
-	// ...
-	void (*entry)(void);
-	entry = (void(*) (void)) (elf->entry);
-	entry();
+    // ...
+    void (*entry)(void);
+    entry = (void(*) (void)) (elf->entry);
+    entry();
 }
 ```
 
@@ -628,4 +629,4 @@ boot loader is one of the most opaque parts of the xv6 code, full of boring
 hardware specs and backwards-compatibility requirements, so if you made it this
 far, it does get better!
 
-(But it also gets worse... looking at you, "mp.c" and "kbd.c"...)
+(But it also gets worse... looking at you, [mp.c](https://github.com/mit-pdos/xv6-public/blob/master/mp.c) and [kbd.c](https://github.com/mit-pdos/xv6-public/blob/master/kb.c)...)

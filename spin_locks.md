@@ -64,7 +64,7 @@ That would be horribly inefficient; think of all the CPU time wasted when one
 process just loops over and over again while another process does something slow
 while holding a lock! But it's also the approach that xv6 is gonna take, because
 at the end of the day, our kernel is still in baby stages and beggars can't be
-choosers. So xv6 uses "spin-locks" with loops that only stop when we acquire a
+choosers. So xv6 uses *spin-locks* with loops that only stop when we acquire a
 lock.
 
 This means we should be careful when using locks to acquire them only at the
@@ -92,7 +92,7 @@ first we have to check whether the lock is `true`, then we have to set it to
 instructions might get executed in parallel and then we'd both acquire the lock
 at the same time -> RACE CONDITION.
 
-The solution will require hardware support, using "atomic" instructions -- these
+The solution will require hardware support, using *atomic* instructions -- these
 are hardware instructions that are indivisible; no other code can execute in
 between ours. One example is the x86 instruction `xchg`, which atomically reads
 a value from memory, updates it to a new value, and returns the old value.
@@ -151,14 +151,14 @@ been carefully written so that the lock acquisition order is always consistent.
 
 ## spinlock.c
 
-xv6's spin-locks are set up as a `struct spinlock`, defined in "spinlock.h". The
+xv6's spin-locks are set up as a `struct spinlock`, defined in [spinlock.h](https://github.com/mit-pdos/xv6-public/blob/master/spinlock.h). The
 `locked` field acts as the boolean variable to determine whether the lock is
 held; the other fields are for debugging, since we can expect concurrency issues
 to be the one of the most common causes of bugs in the kernel code because,
 again, concurrency is your worst nightmare.
 
 Note that `locked` is an `unsigned int` instead of a `bool`; C requires the
-standard library header "stdbool.h" in order to use the `bool` type, but on
+standard library header *stdbool.h* in order to use the `bool` type, but on
 bare metal we can't assume we have a standard library to use.
 
 ### initlock
@@ -166,9 +166,9 @@ bare metal we can't assume we have a standard library to use.
 ```c
 void initlock(struct spinlock *lk, char *name)
 {
-	lk->name = name;
-	lk->locked = 0;
-	lk->cpu = 0;
+    lk->name = name;
+    lk->locked = 0;
+    lk->cpu = 0;
 }
 ```
 
@@ -188,12 +188,12 @@ xv6 uses paired functions `pushcli()` and `popcli()`.
 ```c
 void pushcli(void)
 {
-	int eflags = readeflags();
-	cli();
-	if (mycpu()->ncli == 0) {
-		mycpu()->intena = eflags & FL_IF;
-	}
-	mycpu()->ncli += 1;
+    int eflags = readeflags();
+    cli();
+    if (mycpu()->ncli == 0) {
+        mycpu()->intena = eflags & FL_IF;
+    }
+    mycpu()->ncli += 1;
 }
 ```
 `readeflags()` is a C wrapper for some x86 assembly code that reads from the
@@ -209,15 +209,15 @@ call, we save the value of the interrupt flag in the `intena` field.
 ```c
 void popcli(void)
 {
-	if (readeflags() & FL_IF) {
-		panic("popcli - interruptible");
-	}
-	if (--mycpu()->ncli < 0) {
-		panic("popcli");
-	}
-	if (mycpu()->ncli == 0 && mycpu()->intena) {
-		sti();
-	}
+    if (readeflags() & FL_IF) {
+        panic("popcli - interruptible");
+    }
+    if (--mycpu()->ncli < 0) {
+        panic("popcli");
+    }
+    if (mycpu()->ncli == 0 && mycpu()->intena) {
+        sti();
+    }
 }
 ```
 `popcli()` first checks to make sure interrupts aren't already enabled and we're
@@ -237,10 +237,10 @@ This function checks whether this CPU is holding the lock.
 ```c
 int holding(struct spinlock *lock)
 {
-	pushcli();
-	int r = lock->locked && lock->cpu == mycpu();
-	popcli();
-	return r;
+    pushcli();
+    int r = lock->locked && lock->cpu == mycpu();
+    popcli();
+    return r;
 }
 ```
 Not much to talk about here; it just checks (inside calls to `pushcli()` and
@@ -255,18 +255,18 @@ ourselves.
 ```c
 void acquire(struct spinlock *lk)
 {
-	pushcli();
+    pushcli();
 
-	if (holding(lk)) {
-		panic("acquire");
-	}
+    if (holding(lk)) {
+        panic("acquire");
+    }
 
-	// ....
+    // ....
 }
 ```
 
 Next up, we've gotta acquire the lock using the atomic `xchg` instruction,
-defined in "x86.h". Like we said before, the trick is to atomically set `locked`
+defined in [x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h). Like we said before, the trick is to atomically set `locked`
 to 1 while returning the old value. If the returned old value is 1, that
 means it was already 1 before we got to it, so it's currently being held and we
 can't acquire it yet -- gotta spin. But if the returned old value is 0, that
@@ -277,10 +277,10 @@ that no one else will be holding the lock at the same time.
 ```c
 void acquire(struct spinlock *lk)
 {
-	// ...
-	while (xchg(&lk->locked, 1) != 0)
-		;
-	// ...
+    // ...
+    while (xchg(&lk->locked, 1) != 0)
+        ;
+    // ...
 }
 ```
 
@@ -293,9 +293,9 @@ acquisition point. We can do that with a special compiler instruction:
 ```c
 void acquire(struct spinlock *lk)
 {
-	// ...
-	__sync_synchronize();
-	// ...
+    // ...
+    __sync_synchronize();
+    // ...
 }
 ```
 
@@ -305,9 +305,9 @@ debugging purposes. Don't worry about `mycpu()` for now, but we'll talk about
 ```c
 void acquire(struct spinlock *lk)
 {
-	// ...
-	lk->cpu = mycpu();
-	getcallerpcs(&lk, lk->pcs);
+    // ...
+    lk->cpu = mycpu();
+    getcallerpcs(&lk, lk->pcs);
 }
 ```
 
@@ -329,16 +329,16 @@ tell the compiler and processor not to reorder code past the lock release.
 ```c
 void release(struct spinlock *lk)
 {
-	if (!holding(lk)) {
-		panic("release");
-	}
+    if (!holding(lk)) {
+        panic("release");
+    }
 
-	lk->pcs[0] = 0;
-	lk->cpu = 0;
+    lk->pcs[0] = 0;
+    lk->cpu = 0;
 
-	__sync_synchronize();
+    __sync_synchronize();
 
-	// ...
+    // ...
 }
 ```
 
@@ -350,10 +350,10 @@ enable interrupts again.
 ```c
 void release(struct spinlock *lk)
 {
-	// ...
-	asm volatile("movl $0, %0" : "+m" (lk->locked) : );
+    // ...
+    asm volatile("movl $0, %0" : "+m" (lk->locked) : );
 
-	popcli();
+    popcli();
 }
 ```
 
@@ -376,9 +376,9 @@ order, so that the first argument is at the top (lowest address) of the stack.
 Then the previous function's `%eip` is pushed on the stack, followed by its
 `%ebp`:
 ```
-<- low addresses											   high addresses ->
-...	 [new function's data]  [old %ebp]  [old %eip]  [new arg1]  [new arg2]  ...
-<- top of stack												  bottom of stack ->
+<- low addresses                                               high addresses ->
+...  [new function's data]  [old %ebp]  [old %eip]  [new arg1]  [new arg2]  ...
+<- top of stack                                               bottom of stack ->
 ```
 
 Anyway, the point is that if we have the address of the first argument to the
@@ -388,8 +388,8 @@ is two spots below it.
 ```c
 void getcallerpcs(void *v, uint pcs[])
 {
-	uint *ebp = (uint *) v - 2;
-	// ...
+    uint *ebp = (uint *) v - 2;
+    // ...
 }
 ```
 Note the type casts here -- `v` is a pointer to the first argument, which can be
@@ -407,17 +407,17 @@ the `pcs` array.
 ```c
 void getcallerpcs(void *v, uint pcs[])
 {
-	// ...
-	int i;
-	for (i = 0; i < 10; i++) {
-		// Stop if the %ebp pointer is null or out of range
-		if (ebp == 0 || ebp < (uint *) KERNBASE || ebp == (uint *) 0xffffffff) {
-			break;
-		}
-		pcs[i] = ebp[1];
-		ebp = (uint *) ebp[0];
-	}
-	// ...
+    // ...
+    int i;
+    for (i = 0; i < 10; i++) {
+        // Stop if the %ebp pointer is null or out of range
+        if (ebp == 0 || ebp < (uint *) KERNBASE || ebp == (uint *) 0xffffffff) {
+            break;
+        }
+        pcs[i] = ebp[1];
+        ebp = (uint *) ebp[0];
+    }
+    // ...
 }
 ```
 Let's talk about those last two lines: the `ebp` pointer in the code holds the
@@ -440,10 +440,10 @@ them when debugging.
 ```c
 void getcallerpcs(void *v, uint pcs[])
 {
-	// ...
-	for (; i < 10; i++) {
-		pcs[i] = 0;
-	}
+    // ...
+    for (; i < 10; i++) {
+        pcs[i] = 0;
+    }
 }
 ```
 One last little trick: the previous for loop declared the loop variable `i`

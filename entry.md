@@ -18,13 +18,13 @@ xv6 does something that a lot of OSes do: it sets itself up as a higher-half
 kernel. That means that in the virtual address space (from 0 to 4 GB), the
 kernel will reside in the upper half starting at 2 GB, i.e. address 0x8000_0000
 and up; user code will start at 0 and end at 2 GB. Because of this, `KERNBASE`
-is defined in "memlayout.h" as 0x8000_0000.
+is defined in [memlayout.h](https://github.com/mit-pdos/xv6-public/blob/master/memlayout.h) as 0x8000_0000.
 
 Then it sets up paging so that all of physical memory is identity-mapped to
 virtual memory starting at 0x8000_0000. This makes it really convenient for the
 kernel to figure out the physical address of a virtual address it's using; just
 subtract `KERNBASE` and you're done. The `V2P` and `V2P_WO` macros defined in
-"memlayout.h" do just that, and the `P2V` and `P2V_WO` add `KERNBASE` to a
+[memlayout.h](https://github.com/mit-pdos/xv6-public/blob/master/memlayout.h) do just that, and the `P2V` and `P2V_WO` add `KERNBASE` to a
 physical address to get the kernel virtual address.
 
 Note that I said "kernel virtual address", not just any old virtual address.
@@ -41,7 +41,7 @@ it'll be a little less than 2 GB, and (2) it's hard and annoying to figure out
 how much physical memory is actually present on any given machine, so xv6 just
 says to hell with all that and picks the totally arbitrary value of a puny 224
 MB as the amount of available physical memory (that's `PHYSTOP`, defined in
-"memlayout.h").
+[memlayout.h](https://github.com/mit-pdos/xv6-public/blob/master/memlayout.h)).
 
 ## Paging
 
@@ -94,7 +94,7 @@ Translation Lookaside Buffer (TLB) to store recently-used mappings and make them
 faster in the future. Since pages are 4096 bytes, it only needs to map a new
 page if the addresses some code is asking for crosses a page boundary.
 
-xv6 provides two macros, `PDX` and `PTX` defined in "mmu.h", to recover just the
+xv6 provides two macros, `PDX` and `PTX` defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h), to recover just the
 page directory index bits or the page table index bits, respectively, from a
 virtual address.
 
@@ -154,7 +154,7 @@ own symbols too. Third, it has to create an output file in a format that the OS
 can use, like ELF.
 
 xv6 has decided that command-line flags are too basic for it, so instead it'll
-use a linker script "kernel.ld" for the GNU linker.
+use a linker script [kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld) for the GNU linker.
 
 We start off by specifying the output format (32-bit ELF), the architecture
 (x86, also known as i386), and the entry point to start executing code. The
@@ -180,13 +180,13 @@ We'll use the physical address 0x0010_0000, since that maps to virtual address
 0x8010_0000.
 ```ld
 SECTIONS {
-	. = 0x80100000;
+    . = 0x80100000;
 
-	.text : AT(0x100000) {
-		/* this part tells the linker which files to include in this section */
-	}
+    .text : AT(0x100000) {
+        /* this part tells the linker which files to include in this section */
+    }
 
-	/* more sections here... */
+    /* more sections here... */
 }
 ```
 
@@ -197,25 +197,25 @@ of it, but if the code uses `symbol` without defining it, then the linker will
 replace those references with the contents of that memory location.
 ```ld
 SECTIONS {
-	/* virtual address and text sections are defined as above */
+    /* virtual address and text sections are defined as above */
 
-	PROVIDE(etext = .);		/* etext will be at the address right after the end
-							of the text section */
+    PROVIDE(etext = .);     /* etext will be at the address right after the end
+                            of the text section */
 
-	/* rodata, stab, and stabstr sections defined here */
+    /* rodata, stab, and stabstr sections defined here */
 
-	PROVIDE(data = .);		/* data will be at the address at the very beginning
-							of the data section */
+    PROVIDE(data = .);      /* data will be at the address at the very beginning
+                            of the data section */
 
-	/* data section defined here */
+    /* data section defined here */
 
-	PROVIDE(edata = .);		/* edata will be at the address right after the end
-							of the data section */
+    PROVIDE(edata = .);     /* edata will be at the address right after the end
+                            of the data section */
 
-	/* bss section defined here */
+    /* bss section defined here */
 
-	PROVIDE(end = .);		/* end will be at the very last address at the end
-							of the entire kernel code */
+    PROVIDE(end = .);       /* end will be at the very last address at the end
+                            of the entire kernel code */
 }
 ```
 
@@ -253,28 +253,28 @@ So we'll start by creating a `multiboot_header` label at the beginning of the
 file (and thus, the beginning of the kernel image) and making sure it's aligned
 to 32 bits.
 ```asm
-.p2align 2		# Force 4-byte alignment
+.p2align 2      # Force 4-byte alignment
 .text
 .globl multiboot_header
 multiboot_header:
-	# ...
+    # ...
 ```
 
 Now we'll just add the magic number, set the flags to 0 to indicate no special
 requirements, and add the checksum.
 ```asm
-	#define magic 0x1badboo2
-	#define flags 0
-	.long magic
-	.long flags
-	.long (-magic-flags)
+    #define magic 0x1badboo2
+    #define flags 0
+    .long magic
+    .long flags
+    .long (-magic-flags)
 ```
 
 And that's it!
 
 ### entry
 
-Back in "kernel.ld", we said that the linker would set up the kernel's ELF
+Back in [kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld), we said that the linker would set up the kernel's ELF
 header to specify the kernel's entry point using `_start`, but `_start` itself
 wasn't actually defined there, so we have to do that first. We don't know where
 this code will end up in memory, so we'll define an `entry` label and set
@@ -320,13 +320,13 @@ but it does cut down on the overhead and allows a faster set-up. Plus we're only
 gonna use them for a minute while we get ready for the full paging ordeal.
 
 To use 4 MB pages, we have to enable x86's Page Size Extension (PSE) by setting
-the fourth bit in the `%cr4` register. `CR4_PSE` is defined in "mmu.h" as 0x10,
+the fourth bit in the `%cr4` register. `CR4_PSE` is defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) as 0x10,
 or 00010000 in binary.
 ```asm
 entry:
-	movl	%cr4, %eax
-	orl		$(CR4_PSE), %eax
-	movl	%eax, %cr4
+    movl    %cr4, %eax
+    orl     $(CR4_PSE), %eax
+    movl    %eax, %cr4
 ```
 
 We need a page directory before we can set up paging; again, basic version now,
@@ -335,31 +335,31 @@ boot loader where we tell the processor to load the page directory now but then
 procrastinate actually writing it; this time, we'll write it in C and call it
 `entrypgdir`. Then we'll load its physical address into register `%cr3`.
 ```asm
-	movl	$(V2P_WO(entrypgdir)), %eax
-	movl	%eax, %cr3
+    movl    $(V2P_WO(entrypgdir)), %eax
+    movl    %eax, %cr3
 ```
 
 Now we can enable (a basic version of) paging! We tell the CPU to start using
 the page directory in `%cr3` by setting bit 31 (paging) of register `%cr0`; we
 can also set bit 16 (write protect) of the same register to prevent writing to
 any pages that the page directory and page tables have marked as read-only.
-`CR0_PG` and `CR0_WP` are defined in "mmu.h" to set these bits.
+`CR0_PG` and `CR0_WP` are defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) to set these bits.
 ```asm
-	movl	%cr0, %eax
-	orl		$(CR0_PG|CR0_WP), %eax
-	movl	%eax, %cr0
+    movl    %cr0, %eax
+    orl     $(CR0_PG|CR0_WP), %eax
+    movl    %eax, %cr0
 ```
 
 Now remember how the processor is still running at low addresses? Yeah, let's
 fix that. First we'll make a new kernel stack in the higher half that will still
 be valid even after we get rid of the lower address mappings. We'll have the
 linker save some space for us under the symbol `stack` and set it up there;
-`KSTACKSIZE` is defined in "param.h" as 4096 bytes. So we just set the stack
+`KSTACKSIZE` is defined in [param.h](https://github.com/mit-pdos/xv6-public/blob/master/param.h) as 4096 bytes. So we just set the stack
 pointer register `%esp` to the top of that section in order to let the stack
 grow down toward the address of `stack`. Again, we'll procrastinate actually
 defining `stack`.
 ```asm
-	movl	$(stack + KSTACKSIZE), %esp
+    movl    $(stack + KSTACKSIZE), %esp
 ```
 
 Now we want to call into the `main()` function, but we don't just want to do
@@ -367,8 +367,8 @@ that the usual assembly way of `call main`. That would generate a jump relative
 to the current value of `%eip`, which is still in low addresses. We'll use an
 indirect jump instead.
 ```asm
-	mov		$main, %eax
-	jmp		*%eax
+    mov     $main, %eax
+    jmp     *%eax
 ```
 
 Finally, we need to get around to reserving space for the stack. We can do that
@@ -380,15 +380,15 @@ with the assembler instruction `.comm symbol, size`:
 ## main.c
 
 Awesome, back to C code now! Remember how we procrastinated actually defining
-`entrypgdir`? Let's do that now; it's at the bottom of "main.c".
+`entrypgdir`? Let's do that now; it's at the bottom of [main.c](https://github.com/mit-pdos/xv6-public/blob/master/main.c).
 
 ### entrypgdir
 What in the world is this?!
 ```c
 __attribute__((__aligned__(PGSIZE)))
 pde_t entrypgdir[NPDENTRIES] = {
-	[0] = (0) | PTE_P | PTE_W | PTE_PS,
-	[KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,
+    [0] = (0) | PTE_P | PTE_W | PTE_PS,
+    [KERNBASE>>PDXSHIFT] = (0) | PTE_P | PTE_W | PTE_PS,
 };
 ```
 Okay, bear with me; I promise it's not too bad.
@@ -398,8 +398,8 @@ should be placed in memory at an address that's a multiple of `PGSIZE` (4096
 bytes); that's just a requirement of the paging hardware.
 
 Next, we define `entrypgdir` as an array of `NPDENTRIES` (1024, according to
-"mmu.h"), each of type `pde_t` (a type alias for `unsigned int`, according to
-"types.h").
+[mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h)), each of type `pde_t` (a type alias for `unsigned int`, according to
+[types.h](https://github.com/mit-pdos/xv6-public/blob/master/types.h)).
 
 Then we initialize the entries: in C, you're allowed to initialize an array by
 specifying the values of specific enties; all other enties become zero. You
@@ -415,76 +415,76 @@ We set their value to 0, because we want them to map to physical addresses from
 0 up to 4 MB. Oh, and remember how page directories and page tables can also
 hold permission flags? We want to set flags to say that these pages are present
 (so that accessing them doesn't cause a page fault), writeable, and 4 MB in
-size; those are defined in "mmu.h" as `PTE_P`, `PTE_W`, and `PTE_PS`. We can
+size; those are defined in [mmu.h](https://github.com/mit-pdos/xv6-public/blob/master/mmu.h) as `PTE_P`, `PTE_W`, and `PTE_PS`. We can
 combine them all together by bitwise-ORing them.
 
 And we're done!
 
 ### main
 
-The code in "entry.S" finished up by calling into the C function `main()`, which
+The code in [entry.S](https://github.com/mit-pdos/xv6-public/blob/master/entry.S) finished up by calling into the C function `main()`, which
 is where the core set-up happens before we can start running processes. It calls
 into basically every single part of the xv6 kernel, so we can't go through all
 the functions line-by-line yet; instead I'll just give you an overview of what
 they do.
 
 * `kinit1()` solves another bootstrap problem around paging: we need to allocate
-	pages in order to use the rest of memory, but we can't allocate those pages
-	without first freeing the rest of memory, which requires allocating them...
-	You see what I mean. This function will free the rest of memory between the
-	`end` of the kernel code (defined in "linker.ld", remember?) and 4 MB.
+    pages in order to use the rest of memory, but we can't allocate those pages
+    without first freeing the rest of memory, which requires allocating them...
+    You see what I mean. This function will free the rest of memory between the
+    `end` of the kernel code (defined in [kernel.ld](https://github.com/mit-pdos/xv6-public/blob/master/kernel.ld), remember?) and 4 MB.
 * `kvmalloc()` allocates a page of memory to hold the fancy full-fledged page
-	directory, sets it up with mappings for the kernel's instructions and data,
-	all of physical memory, and I/O space, then switches to that page directory
-	(leaving poor old `entrypgdir` in the trash).
+    directory, sets it up with mappings for the kernel's instructions and data,
+    all of physical memory, and I/O space, then switches to that page directory
+    (leaving poor old `entrypgdir` in the trash).
 * `mpinit()` detects hardware components like additional CPUs, buses, interrupt
-	controllers, etc. Then it determines whether this machine supports this
-	crazy new idea where you can have multiple CPU cores. Wow, 1995 is crazy.
+    controllers, etc. Then it determines whether this machine supports this
+    crazy new idea where you can have multiple CPU cores. Wow, 1995 is crazy.
 * `lapicinit()` programs this CPU's local interrupt controller so that it'll
-	deliver timer interrupts, exceptions, etc. when we're ready for them later.
+    deliver timer interrupts, exceptions, etc. when we're ready for them later.
 * `seginit()` sets up this CPU's kernel segment descriptors in its GDT; we still
-	won't really use segmentation, but we'll at least use the permission bits.
+    won't really use segmentation, but we'll at least use the permission bits.
 * `picinit()` disables the *ancient* PIC interrupt controller that literally no
-	one has ever used since the APIC was introduced in 1989. I don't even know
-	what to	say. I guess I was mistaken when I assumed it was 1995; I don't
-	know.
+    one has ever used since the APIC was introduced in 1989. I don't even know
+    what to say. I guess I was mistaken when I assumed it was 1995; I don't
+    know.
 * `ioapicinit()` programs the I/O interrupt controller to forward interrupts
-	from the disk, keyboard, serial port, etc., when we're ready for them later.
-	Each device will have to be set up to send its interrupts to the I/O APIC.
+    from the disk, keyboard, serial port, etc., when we're ready for them later.
+    Each device will have to be set up to send its interrupts to the I/O APIC.
 * `consoleinit()` initializes the console (display screen) by adding it to a
-	table that maps device numbers to device functions, with entries for reading
-	and writing to the console. It also sets up the keyboard to send interrupts
-	to the I/O APIC.
+    table that maps device numbers to device functions, with entries for reading
+    and writing to the console. It also sets up the keyboard to send interrupts
+    to the I/O APIC.
 * `uartinit()` initializes the serial port to send an interrupt if we ever
-	receive any data over it. xv6 uses the serial port to communicate with
-	emulators like QEMU and Bochs.
+    receive any data over it. xv6 uses the serial port to communicate with
+    emulators like QEMU and Bochs.
 * `pinit()` initializes an empty process table so that we can start allocating
-	slots in it to processes as we spin them up.
+    slots in it to processes as we spin them up.
 * `tvinit()` sets up and interrupt descriptor table (IDT) so that the CPU can
-	find interrupt handler functions to deal with exceptions and interrupts when
-	they come.
+    find interrupt handler functions to deal with exceptions and interrupts when
+    they come.
 * `binit()` initializes the buffer cache, a linked list of buffers holding
-	cached copies of disk data for more efficient reading and writing.
+    cached copies of disk data for more efficient reading and writing.
 * `fileinit()` sets up the file table, a global array of all the open files in
-	the system. There are other parts of the file system that need to be
-	initialized like the logging layer and inode layer, but those might require
-	sleeping, which we can only do from user mode, so we'll do that in the first
-	user process we set up.
+    the system. There are other parts of the file system that need to be
+    initialized like the logging layer and inode layer, but those might require
+    sleeping, which we can only do from user mode, so we'll do that in the first
+    user process we set up.
 * `ideinit()` initializes the disk controller, checks whether the file system
-	disk is present (because both the kernel and boot loader are on the boot
-	disk, which is separate from the disk with user programs), and sets up disk
-	interrupts.
-* `startothers()` loads the entry code for all other CPUs (in "entryothers.S")
-	into memory, then runs the whole setup process again for each new CPU.
+    disk is present (because both the kernel and boot loader are on the boot
+    disk, which is separate from the disk with user programs), and sets up disk
+    interrupts.
+* `startothers()` loads the entry code for all other CPUs (in [entryothers.S](https://github.com/mit-pdos/xv6-public/blob/master/entryothers.S))
+    into memory, then runs the whole setup process again for each new CPU.
 * `kinit2()` finishes initializing the page allocator by freeing memory between
-	4 MB and `PHYSTOP`.
+    4 MB and `PHYSTOP`.
 * `userinit()` creates the first user process, which will run the initialization
-	steps that have to be done in user space before spinning up a shell.
+    steps that have to be done in user space before spinning up a shell.
 * `mpmain()` loads the interrupt descriptor table into the CPU so that we're
-	finally completely ready to receive interrupts, then calls the `scheduler()`
-	function in "proc.c", which enables interrupts on this CPU and starts
-	scheduling processes to run. `scheduler()` never returns, so at that point
-	we're completely done with setup and we're running the OS proper.
+    finally completely ready to receive interrupts, then calls the `scheduler()`
+    function in [proc.c](https://github.com/mit-pdos/xv6-public/blob/master/proc.c), which enables interrupts on this CPU and starts
+    scheduling processes to run. `scheduler()` never returns, so at that point
+    we're completely done with setup and we're running the OS proper.
 
 ## Summary
 
