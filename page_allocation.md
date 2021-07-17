@@ -365,4 +365,4 @@ needs to use variable regions, so when a memory region gets allocated twice
 after a double-free, it might get split up into differently-sized pieces, of
 which some parts get allocated to other processes, etc... It's just a nightmare.
 
-Next up, we'll (finally) finish the story of virtual memory!
+Next up, we'll see the full story of virtual memory.
