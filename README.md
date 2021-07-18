@@ -42,19 +42,20 @@ Please freel free to point out errors, corrections, improvements, etc.
 5. [Paging: Kernel Page Directory](paging_kernel.md)
 6. [Paging: User Space and Processes](paging_user.md)
 7. Devices: Interrupt Controllers (optional)
-8. [It's a Trap!](traps.md)
-9. System Calls
-10. Processes
-11. Sleep-Locks
-12. Devices: Multiprocessing (optional)
-13. Devices: Keyboard Driver (optional)
-14. Devices: Serial Port and Console Drivers (optional)
-15. Devices: Disk Driver
-16. File System: Lower Layers
-17. File System: Upper Layers
-18. User Space: The First Process
-19. User Space: The Shell
-20. User Space: C Library and Utilities (optional)
+8. Processes
+9. Scheduling
+10. [It's a Trap!](traps.md)
+11. System Calls
+12. Sleep-Locks
+13. Devices: Multiprocessing (optional)
+14. Devices: Keyboard Driver (optional)
+15. Devices: Serial Port and Console Drivers (optional)
+16. Devices: Disk Driver
+17. File System: Lower Layers
+18. File System: Upper Layers
+19. User Space: The First Process
+20. User Space: The Shell
+21. User Space: C Library and Utilities (optional)
 
 ## Roadmap
 
@@ -83,7 +84,8 @@ only gonna end up adding 10 lines of code for any given project.
 
 Once you're done with virtualization in OSTEP, come back here and read these
 posts, starting from the boot process up to the end of processes and system
-calls. Then do [`initial-xv6`](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/initial-xv6),
+calls. Then do
+[`initial-xv6`](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/initial-xv6),
 [`scheduling-xv6-lottery`](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/scheduling-xv6-lottery),
 and [`vm-xv6-intro`](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/vm-xv6-intro).
 
