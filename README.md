@@ -37,24 +37,24 @@ Please freel free to point out errors, corrections, improvements, etc.
 
 1. [Das Boot](boot.md)
 2. [Entering the Kernel](entry.md)
-3. [Detour: Spin-Locks](spin_locks.md)
+3. [Spin-Locks](spin_locks.md)
 4. [Paging: Page Allocation](page_allocation.md)
 5. [Paging: Kernel Page Directory](paging_kernel.md)
 6. [Paging: User Space and Processes](paging_user.md)
-7. Devices: Interrupt Controllers
-8. It's a Trap!
+7. Devices: Interrupt Controllers (optional)
+8. [It's a Trap!](traps.md)
 9. System Calls
 10. Processes
-11. Detour: Sleep-Locks
-12. Devices: Multiprocessing
-13. Devices: Keyboard Driver
-14. Devices: Serial Port and Console Drivers
+11. Sleep-Locks
+12. Devices: Multiprocessing (optional)
+13. Devices: Keyboard Driver (optional)
+14. Devices: Serial Port and Console Drivers (optional)
 15. Devices: Disk Driver
 16. File System: Lower Layers
 17. File System: Upper Layers
 18. User Space: The First Process
 19. User Space: The Shell
-20. User Space: C Library and Utilities
+20. User Space: C Library and Utilities (optional)
 
 ## Roadmap
 
@@ -97,8 +97,9 @@ project.
 ### Assumed Background
 
 * You've read through all the [OSTEP chapters on virtualization](https://pages.cs.wisc.edu/~remzi/OSTEP/#book-chapters) (or watched all the [lectures](https://pages.cs.wisc.edu/~remzi/Classes/537/Spring2018/Discussion/videos.html)) before starting this guide. That doesn't mean doing all the virtualization projects: you'll have to understand a lot about xv6 right off the bat, so hold off on the xv6 projects until after you've read this guide.
-* You're reasonably familiar with (but not necessarily an expert on) C. I'm assuming you've used C at the level of something like CS 50, but not much more beyond that. If you haven't, don't try to learn C by reading the xv6 code or doing the OSTEP projects. Unfortunately, C isn't the kind of language you can pick up on the fly; it has way too many pitfalls. It's also a really bad idea to learn it from online tutorials; they're usually filled with dangerous mistakes. Use a book like [*C Programming: A Modern Approach*](http://www.knking.com/books/c2/) or [*Modern C*](https://modernc.gforge.inria.fr). (Yes, I think [*K&R*](https://en.wikipedia.org/wiki/The_C_Programming_Language) is great, but I also think it's too short and doesn't go over everything you need for xv6 and OSTEP.)
-* You've taken a course like [Nand2Tetris](https://www.nand2tetris.org/) or [CS:APP](https://www.cs.cmu.edu/afs/cs.cmu.edu/academic/class/15213-f15/www/schedule.html) [(book)](https://csapp.cs.cmu.edu/3e/home.html), or you understand the basics of computer architecture and systems programming. You don't need to know any x86-specific details -- I'll talk about those along the way -- but it coudn't hurt either.
+* You're reasonably familiar with C, maybe at the level of something like CS 50. If you haven't, don't try to learn C by reading the xv6 code or doing the OSTEP projects. Unfortunately, C isn't the kind of language you can pick up on the fly; it has way too many pitfalls. It's also a really bad idea to learn it from online tutorials; they're usually filled with dangerous mistakes. Use a book like [*C Programming: A Modern Approach*](http://www.knking.com/books/c2/) or [*Modern C*](https://modernc.gforge.inria.fr). (Yes, I think [*K&R*](https://en.wikipedia.org/wiki/The_C_Programming_Language) is great, but I also think it's too short and doesn't go over everything you need for xv6 and OSTEP.)
+* You're also not an expert on C. If you're the kind of person who uses `#pragma`s in their code or can cite line numbers in the C Standard, then you can probably just read the xv6 code directly; this guide will just slow you down.
+* You've taken a course like [Nand2Tetris](https://www.nand2tetris.org/) or [CS:APP](https://www.cs.cmu.edu/afs/cs.cmu.edu/academic/class/15213-f15/www/schedule.html) [(book)](https://csapp.cs.cmu.edu/3e/home.html), or you understand the basics of computer architecture and systems programming. You don't need to know any x86-specific details -- I'll talk about those along the way -- but it couldn't hurt either.
 
 ## Acknowledgements
 
