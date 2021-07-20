@@ -612,7 +612,7 @@ void switchuvm(struct proc *p)
 So now we have a GDT entry pointing to the TSS, which is now updated. Now we
 just load it into the task register with the x86 instruction `ltr`; here we use
 a C wrapper for that assembly instruction, defined in
-[x86.h](https://github.com/mid-pdos/xv6-public/blob/master/x86.h).
+[x86.h](https://github.com/mit-pdos/xv6-public/blob/master/x86.h).
 ```c
 void switchuvm(struct proc *p)
 {
@@ -874,9 +874,9 @@ software. Oh wait...
 So if you ever find yourself looking at C during code review and you come across
 a function that returns a pointer, you should stop what you're doing and look up
 the documentation for that function. If that function has any chance of
-returning a null pointer, then you yell and kick and scream until somebody adds
-a null check and figures out they want to handle it if it's null. Is this
-annoying? Yes. Hard to remember? Yes. But that's C. *(cough cough use Rust
+returning a null pointer, then you should yell and kick and scream until somebody
+adds a null check and figures out how they want to handle it if it's null. Is
+this annoying? Yes. Hard to remember? Yes. But that's C. *(cough cough use Rust
 instead cough cough...)*
 
 Now, the xv6 authors are so awesome that I'm gonna give them the benefit of the
