@@ -1,16 +1,21 @@
 # It's a Trap!
 
-The last post introduced the *context* of a process in xv6 via the task state
-segment. A CPU will use that to perform a *context switch* to a different
-process, or to transfer control to some kernel code. The former happens during
-scheduling. The latter can happen during a system call (when a user process
-jumps up and down asking for the kernel's attention), an exception (when a user
-process misbehaves), or a hardware interrupt (e.g., the disk signaling it's done
-with an operation, the keyboard signaling a key was pressed, or the timer saying
-it's time to switch processes).
+The last post introduced the mechanisms that xv6 uses for scheduling and context
+switches. User processes can transfer control to kernel code with system calls,
+potentially switching into the scheduler with `sleep()` or `exit()` to find
+another process to run. But there are many other system calls besides those two
+Kernel code can also be invoked during hardware interrupts or software
+exceptions; these three together are collectively referred to as traps.
 
-We'll look at scheduling later; the last three situations will be referred to
-collectively as interrupts, and we'll go over that code now.
+We'll go over traps now to understand them more generally. First, about the
+terminology: depending on the source, interrupts might mean hardware interrupts
+specifically or any trap generally; similarly, exceptions might mean errors
+arising from the code, or traps in general. It's super frustrating because it
+makes it really hard to know what's meant by a word like "interrupt" or
+"exception" in whatever specification or source you happen to be reading. So I'm
+gonna try my best to save you that kind of pain in this post by sticking to
+"interrupt" for the hardware interrupts only, "exception" for software errors,
+and "trap" for those two combined with system calls.
 
 ## Interrupt Descriptor Table
 
@@ -21,31 +26,33 @@ a hardware interrupt happened, the kernel had to start polling all the devices
 to figure out which one just yelled. No. Just no. Running kernel code for all
 this would be way too slow.
 
-So it's the processor that will have to detect interrupts and decide how to
-handle them. But what exactly it should do for an interrupt depends on all kinds
+So it's the processor that will have to detect traps and decide how to handle
+them. But what exactly it should do for a specific trap depends on all kinds of
 of particulars about that OS, e.g. a disk saying it's done reading from a file
 might require updating some file system data or storing the disk data in a
 specific buffer or something. That's too much responsibility for the processor.
 
 Okay, so the kernel will set up a bunch of handler functions for every possible
-type of interrupt. Then it tells the hardware, "Okay, so if you get a disk
-interrupt, here are my instructions to handle that. For timer interrupts, use
-these instructions. If a process tries to access an invalid page, do this..."
-From then on, the processor can handle the interrupts without further input from
-the kernel by looking up the interrupt number in a big table to get the handler
-function that the kernel set up, then just run it.
+type of trap. Then it tells the hardware, "Okay, so if you get a disk interrupt,
+here are my instructions to handle that. For timer interrupts, use these
+instructions. If a process tries to access an invalid page, do this..."
+From then on, the processor can handle the traps without further input from the
+kernel by looking up the interrupt number in a big table to get the trap handler
+function that the kernel set up, then just running it.
 
 In the x86 architecture, that table is called the *interrupt descriptor table*
-or IDT. It has 256 entries (so that's the maximum number of distinct interrupts
+or IDT. I know, I'm sorry, I promised I'd say "trap" for the general case, but
+the x86 specs give it the official name of IDT even though it handles all the
+traps. Sigh. It has 256 entries (so that's the maximum number of distinct traps
 we can define); each one specifies a segment descriptor (ugh segmentation again,
 you know what that means: opaque code) and an instruction pointer (`%eip`) that
-tell the processor where it can find the corresponding interrupt handler
+tell the processor where it can find the corresponding trap handler
 function.
 
-xv6 won't use all 256 entries; it'll mostly stick to 0-31 (software exceptions),
-32-63 (hardware interrupts), and 64 (system calls), all defined in
+xv6 won't use all 256 entries; it'll mostly use trap numbers 0-31 (software
+exceptions), 32-63 (hardware interrupts), and 64 (system calls), all defined in
 [traps.h](https://github.com/mit-pdos/xv6-public/blob/master/traps.h).
-But we do have to stick them in the IDT anway, so we're the unlucky fools who
+But we do have to stick all 256 in the IDT anway, so we're the unlucky fools who
 get to write 256 functions' worth of assembly code by hand. Nah, just kidding:
 xv6 uses a script in a high-level language to do that for us and spit out the
 entries into an assembly file.
@@ -62,8 +69,8 @@ that somehow they managed to make it even *worse* than C), so you can read it on
 your own if you want.
 
 Now, no script will be able to generate 256 completely unique assembly functions
-with enough detail to handle each interrupt correctly, so each function in the
-script has to be pretty generic. They're all gonna call the same assembly helper
+with enough detail to handle each trap correctly, so each function in the script
+has to be pretty generic. They're all gonna call the same assembly helper
 function, which will call a C function where we can more comfortably code up
 how to handle each interrupt.
 
@@ -128,7 +135,7 @@ vectors:
 
 Okay, so those are all the handler functions; the `vectors` array holds a
 pointer to each one. They're all more or less the same: most of them push zero
-onto the stack, then all they push a *trap number* to indicate which interrupt
+onto the stack, then all they push a *trap number* to indicate which trap
 just happened, and then they jump to a point in the code called `alltraps`;
 that's the assembly helper function I mentioned earlier.
 
@@ -143,10 +150,12 @@ the stack for the others, so we just push 0 ourselves to make them all match up.
 
 ## trapasm.S
 
+### alltraps
+
 The processor needs to run the trap handler in kernel mode, which means we have
 to save some state for the process that's currently running so we can return to
-it later, then set things up to run in kernel mode. The `alltraps` routine does
-just that.
+it later (similar to the `struct context` we saw before), then set things up to
+run in kernel mode. The `alltraps` routine does just that.
 
 Remember how we said the IDT holds segment selectors for `%cs` and `%ss`, plus
 and instruction pointer `%eip`? (I know we haven't seen the code to create the
@@ -198,11 +207,16 @@ stack).
     # ...
 ```
 
-We'll define a section of code here called `trapret` for the code after `trap()`
-returns. We just restore everything back to where it was before, popping stored
-registers off the stack in reverse order. We can skip the trap number and error
-code; we won't need them anymore. Then we use the `iret` or "interrupt return"
-instruction to close out.
+### trapret
+
+We've talked about this function before; when we create a new process, it starts
+executing in `forkret()`, which then returns into `trapret()`. More generally,
+any call to `trap()` will return here as well.
+
+This function just restores everything back to where it was before, popping
+stored registers off the stack in reverse order. We can skip the trap number and
+error code; we won't need them anymore. Then we use the `iret` or "interrupt
+return" (though you should read that as "trap return") instruction to close out.
 ```asm
 .globl trapret
 trapret:
@@ -381,7 +395,7 @@ struct gatedesc {
 };
 ```
 
-Well, okay, that's it for now, I guess.
+Well, okay, that's it for now.
 
 ### tvinit
 
@@ -482,14 +496,12 @@ void trap(struct trapframe *tf)
 Well how should we handle system calls? xv6 will have several, and we don't even
 know what they all are yet. So let's procrastinate again and just call some
 other function `syscall()` to handle the work of figuring out which system call
-to execute. Now, each process has some metadata stored in a `struct proc`; we
-can get that by calling the function `myproc()`. We'll cover these later when we
-talk about processes proper. For now, we'll store the pointer to the `struct
-trapframe` in that process's `struct proc`. Also, processes need to be killed
-once they're done, or if they cause an exception; that happens by setting a
-`killed` flag in the `struct proc`. So we'll check for that before and after
-carrying out the system call and close the process out with `exit()` if it's
-due to be killed.
+to execute. Now we'll store the pointer to the `struct trapframe` in that
+process's `struct proc`, obtained with a call to `myproc()`. Also, processes
+need to be killed once they're done, or if they cause an exception; that happens
+by setting a `killed` flag in the `struct proc`. So we'll check for that before
+and after carrying out the system call and close the process out with `exit()`
+if it's due to be killed.
 ```c
 void trap(struct trapframe *tf)
 {
@@ -537,10 +549,10 @@ to use the `ticks` counter as a rough timer, but we don't know whether all the
 CPU timers will be synchronized, so we'll only update `ticks` using the first
 CPU to avoid those issues.
 
-If you read the last post then you'll be familiar with `lapiceoi()`; if you
-didn't (or you forgot), it tells the interrupt controller that we've read and
-acknowledged the current interrupt so it can clear it and get ready for more
-interrupts.
+If you read the post on interrupt controllers then you'll be familiar with
+`lapiceoi()`; if you didn't (or you forgot), it just tells the local interrupt
+controller that we've read and acknowledged the current interrupt so it can
+clear it and get ready for more interrupts.
 ```c
 void trap(struct trapframe *tf)
 {
@@ -684,4 +696,48 @@ will then send it back to user mode.
 
 ## Summary
 
-TODO
+Let's take a moment to assess how much of xv6 we've already covered. Remember,
+the xv6 kernel has four main functions: (1) finishing the boot process that the
+boot loader started, (2) virtualizing resources in order to isolate processes
+from each other, (3) scheduling processes to run, and (4) interfacing
+between user processes and hardware devices. Let's take that as a checklist and
+go through those items now.
+
+We've already seen some of the initialization routines that get run on boot in
+`main()`; most of the code there sets up virtual memory and all the hardware
+devices. We still have a few more devices to talk about: the keyboard, serial
+port, console, and disk; each of those has its own boot function that we'll need
+to go over in order to wrap up point (1).
+
+On the other hand, we're already done with (2) and (3): we spent a lot of time
+going over virtual memory and paging, and the last post on scheduling showed us
+how xv6 virtualizes the CPU as well as it runs processes.
+
+The code we saw in this post was our introduction to point (4). Traps are the
+primary mechanism for user processes to communicate with the hardware; the
+kernel coordinates that communication by setting up trap handler functions. The
+code we've seen here basically acts like an usher, directing traps to the
+right trap handler function depending on its type. Any hardware interrupt,
+software exception, or user system call will get funneled into the functions
+here before getting dispatched to some other appropriate kernel code that will
+know what to do with it.
+
+We haven't finished point (4) yet, though: we have to actually see what each of
+those trap handler functions does. But we did see some of them: for example, we
+saw that a software exception either kills the process that caused it or panics
+if it occurred in kernel code. That already takes care of one of the three types
+of traps, so we're left with hardware interrupts and system calls. All the
+system calls got redirected to a `syscall()` function which we haven't seen yet.
+
+We have seen how some of the hardware interrupts are dealt with: a timer
+interrupt increments a `ticks` counter (if it's on CPU 0), then calls `yield()`
+to force a process to give up the CPU until the next scheduling round. Spurious
+interrupts either get ignored or print a message to the console. But we've
+procrastinated some of the others: disk interrupts call an `ideintr()` function
+to handle them, keyboard interrupts call `kdbintr()`, and serial port interrupts
+call `uartintr()`, none of which we've gone over.
+
+So in order to wrap up the xv6 kernel, we still have to understand how system
+calls are routed in general, as well as how devices are initialized at boot and
+how the kernel responds to specific system calls that require use of those
+devices. The general system call routing mechanism is up next.
