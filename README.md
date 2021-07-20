@@ -41,13 +41,13 @@ Please freel free to point out errors, corrections, improvements, etc.
 4. [Paging: Page Allocation](page_allocation.md)
 5. [Paging: Kernel Page Directory](paging_kernel.md)
 6. [Paging: User Space and Processes](paging_user.md)
-7. Devices: Interrupt Controllers (optional)
-8. Processes
-9. Scheduling
-10. [It's a Trap!](traps.md)
-11. System Calls
-12. Sleep-Locks
-13. Devices: Multiprocessing (optional)
+7. Devices: Multiprocessing (optional)
+8. Devices: Interrupt Controllers (optional)
+9. [Processes](processes.md)
+10. [Scheduling](scheduling.md)
+11. [It's a Trap!](traps.md)
+12. System Calls
+13. Sleep-Locks
 14. Devices: Keyboard Driver (optional)
 15. Devices: Serial Port and Console Drivers (optional)
 16. Devices: Disk Driver
