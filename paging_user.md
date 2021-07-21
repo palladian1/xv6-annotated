@@ -47,7 +47,8 @@ memory in the new page directory.
 Next, `exec()` skips a page, leaving it mapped but user-inaccessible; then the
 next page becomes the process's stack. Why that empty page? It's an important
 one for protection: that way, user programs that blow their stack will trigger a
-page fault instead of possibly overwriting random code.
+page fault or a general protection fault instead of possibly overwriting random
+code.
 
 Then `exec()` copies some arguments into the stack before it switches to using
 the new page directory and gets rid of the old one it had before.

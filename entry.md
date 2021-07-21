@@ -103,9 +103,10 @@ isolated from the others, and the kernel should be isolated from user processes.
 So each process will get its own page directory, and each entry of that page
 directory will say whether it's present (i.e., mapped) or not. If it's present,
 then it points to a page table for that process; if it's not present and we try
-to access it, we'll get a page fault. Each entry in a page table will also say
-whether that page is present and what kinds of permissions it has. The bit flags
-for the permissions are (in order from least to most significant bit):
+to access it, we'll get a page fault or a general protection fault. Each entry
+in a page table will also say whether that page is present and what kinds of
+permissions it has. The bit flags for the permissions are (in order from least
+to most significant bit):
 * Bit 0: present.
 * Bit 1: read/write.
 * Bit 2: user (otherwise only the kernel can access it).

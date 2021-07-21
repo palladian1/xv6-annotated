@@ -216,7 +216,8 @@ any call to `trap()` will return here as well.
 This function just restores everything back to where it was before, popping
 stored registers off the stack in reverse order. We can skip the trap number and
 error code; we won't need them anymore. Then we use the `iret` or "interrupt
-return" (though you should read that as "trap return") instruction to close out.
+return" (though you should read that as "trap return") instruction to close out,
+return to user mode, and start executing the process's instructions again.
 ```asm
 .globl trapret
 trapret:
@@ -717,10 +718,17 @@ The code we saw in this post was our introduction to point (4). Traps are the
 primary mechanism for user processes to communicate with the hardware; the
 kernel coordinates that communication by setting up trap handler functions. The
 code we've seen here basically acts like an usher, directing traps to the
-right trap handler function depending on its type. Any hardware interrupt,
-software exception, or user system call will get funneled into the functions
-here before getting dispatched to some other appropriate kernel code that will
-know what to do with it.
+right trap handler function depending on its type.
+
+When a trap occurs (x86 instruction `int`), the processor will stop executing
+code, find the IDT, and looks up the entry for that trap number. The script that
+xv6 uses to generate the IDT entries just makes them all point to the same
+function `alltraps()`, which saves all the process's registers, switches into
+kernel mode, and calls `trap()`. Then that function uses the trap number to
+figure out how the kernel wants it to respond to this particular trap. So any
+hardware interrupt, software exception, or user system call will get funneled
+into the functions here before getting dispatched to some other appropriate
+kernel code that will know what to do with it.
 
 We haven't finished point (4) yet, though: we have to actually see what each of
 those trap handler functions does. But we did see some of them: for example, we
