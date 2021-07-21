@@ -903,19 +903,19 @@ After the preprocessor runs on the file, the result will look like this:
 .globl fork
 fork:
     movl    $1, %eax
-    int     64
+    int     $64
     ret
 
 .globl exit
 exit:
     movl    $2, %eax
-    int     64
+    int     $64
     ret
 
 .globl wait
 wait:
     movl    $3, %eax
-    int     64
+    int     $64
     ret
 
 # and so on...
