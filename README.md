@@ -47,17 +47,18 @@ Please freel free to point out errors, corrections, improvements, etc.
 10. [Scheduling](scheduling.md)
 11. [It's a Trap!](traps.md)
 12. [System Calls: Routing](syscalls_routing.md)
-13. System Calls: Processes
+13. [System Calls: Processes](syscalls_processes.md)
 14. Sleep-Locks
-15. Devices: Keyboard Driver (optional)
-16. Devices: Serial Port and Console Drivers (optional)
+15. Devices: Serial Port and Console Drivers (optional)
+16. Devices: Keyboard Driver (optional)
 17. Devices: Disk Driver
 18. File System: Lower Layers
 19. File System: Upper Layers
 20. System Calls: Files
 21. User Space: The First Process
 22. User Space: The Shell
-23. User Space: C Library and Utilities (optional)
+23. User Space: C Library (optional)
+24. User Space: Programs (optional)
 
 ## Roadmap
 
