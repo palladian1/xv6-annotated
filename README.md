@@ -4,15 +4,15 @@ A detailed, line-by-line guide to the [xv6 kernel code](https://github.com/mit-p
 
 ## Overview
 
-I started taking notes on xv6 when I first read through the source code and the
-book for the projects in [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/).
+I started taking notes on xv6 when I first read through the source code for the
+projects in
+[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/).
 Later on, I saw a lot of students struggling with xv6 and the
 [OSTEP projects](https://github.com/remzi-arpacidusseau/ostep-projects/);
-it seems like the
-biggest challenges are (1) the C language, especially when it comes to coding
-for a bare-metal target, (2) finding a suitable entry point and a linear path to
-read through the code in one go, and (3) the lack of a single, centralized guide
-to the source code.
+it seems like the biggest challenges are (1) the C language, especially when it
+comes to low-level systems programming and compiling for a bare-metal target,
+(2) finding a suitable entry point and a linear path to read through the code in
+one go, and (3) the lack of a single, centralized guide to the source code.
 
 [The book that accompanies xv6](https://pdos.csail.mit.edu/6.828/2018/xv6/book-rev11.pdf)
 is great, but it doesn't completely solve those issues; it goes over the main
@@ -21,7 +21,7 @@ points, but I still found myself reading a lot of hardware specs,
 Perspective*](https://csapp.cs.cmu.edu/3e/home.html) to get the finer details. I
 also felt like the xv6 book left out some of the juicy C nuggets that I knew
 would be a challenge for students who haven't had to suffer through months of C
-programming.
+programming before coming to xv6.
 
 Finally, there's a particular challenge that comes with the xv6 projects in
 OSTEP: reading the xv6 source code requires familiarity with virtual memory and
@@ -63,11 +63,15 @@ Please freel free to point out errors, corrections, improvements, etc.
 ## Roadmap
 
 I recommend reading the posts in order; I'll assume you've read all the previous
-posts in any later ones. I'll point out any optional sections. You should have a
-copy of the xv6 source code in front of you while you read the posts. If you want
-a shorter read, you can read the xv6 book instead; it's a great book, but it
-doesn't exhaustively analyze every single line of code and it assumes more knowledge
-of C and x86 architecture than most OSSU students I know have.
+posts in any later ones. You can feel free to skip any sections marked as
+optional though. You should have a copy of the xv6 source code in front of you
+while you read the posts. If you want a shorter read, you can read the xv6 book
+instead; it's a great book, but it doesn't exhaustively analyze every single
+line of code and it assumes more knowledge of C and x86 architecture than what
+most [OSSU](https://github.com/ossu/computer-science/) students will have by the
+time they get to look at xv6.
+
+### OSTEP Projects
 
 If you're working through OSTEP, you should start off by doing the
 [`initial-utilities`](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/initial-utilities)
@@ -101,10 +105,10 @@ project.
 
 ### Assumed Background
 
-* You've read through all the [OSTEP chapters on virtualization](https://pages.cs.wisc.edu/~remzi/OSTEP/#book-chapters) (or watched all the [lectures](https://pages.cs.wisc.edu/~remzi/Classes/537/Spring2018/Discussion/videos.html)) before starting this guide. That doesn't mean doing all the virtualization projects: you'll have to understand a lot about xv6 right off the bat, so hold off on the xv6 projects until after you've read this guide.
-* You're reasonably familiar with C, maybe at the level of something like CS 50. If you haven't, don't try to learn C by reading the xv6 code or doing the OSTEP projects. Unfortunately, C isn't the kind of language you can pick up on the fly; it has way too many pitfalls. It's also a really bad idea to learn it from online tutorials; they're usually filled with dangerous mistakes. Use a book like [*C Programming: A Modern Approach*](http://www.knking.com/books/c2/) or [*Modern C*](https://modernc.gforge.inria.fr). (Yes, I think [*K&R*](https://en.wikipedia.org/wiki/The_C_Programming_Language) is great, but I also think it's too short and doesn't go over everything you need for xv6 and OSTEP.)
-* You're also not an expert on C. If you're the kind of person who uses `#pragma`s in their code or can cite line numbers in the C Standard, then you can probably just read the xv6 code directly; this guide will just slow you down.
-* You've taken a course like [Nand2Tetris](https://www.nand2tetris.org/) or [CS:APP](https://www.cs.cmu.edu/afs/cs.cmu.edu/academic/class/15213-f15/www/schedule.html) [(book)](https://csapp.cs.cmu.edu/3e/home.html), or you understand the basics of computer architecture and systems programming. You don't need to know any x86-specific details -- I'll talk about those along the way -- but it couldn't hurt either.
+* I'll assume you've read through all the [OSTEP chapters on virtualization](https://pages.cs.wisc.edu/~remzi/OSTEP/#book-chapters) (or watched all the [lectures](https://pages.cs.wisc.edu/~remzi/Classes/537/Spring2018/Discussion/videos.html)) before starting this guide. That doesn't mean doing all the virtualization projects: you'll have to understand a lot about xv6 right off the bat, so hold off on the xv6 projects until after you've read this guide.
+* You should be reasonably familiar with C, maybe at the level of something like CS 50 (but see the next bullet point). Please please please don't try to learn C from online resources like GeeksforGeeks, TutorialsPoint, or any of the pages listed on hackr.io -- I've seen too many examples of dangerous C practices or straight-up incorrect explanations to trust those websites at all. They might be great for other languages, but unfortunately C isn't the kind of language you can pick up from online tutorials; it has way too many pitfalls. Use a book like [*C Programming: A Modern Approach*](http://www.knking.com/books/c2/), [*Modern C*](https://modernc.gforge.inria.fr), [*The C Programming Language*](https://en.wikipedia.org/wiki/The_C_Programming_Language), or [*Effective C*](https://nostarch.com/Effective_C).
+* However, I'm also gonna assume you're *not* an expert on C, so I'll go over some of the more obscure C features used in the xv6 code. If you're the kind of person who uses `#pragma`s in their code or can cite line numbers in the C Standard, then you can probably just read the xv6 code directly; this guide will just slow you down.
+* You should take an introductory systems course like [Nand2Tetris](https://www.nand2tetris.org/) or [CS:APP](https://www.cs.cmu.edu/afs/cs.cmu.edu/academic/class/15213-f15/www/schedule.html) [(book)](https://csapp.cs.cmu.edu/3e/home.html) in order to understand the basics of computer architecture and systems programming. You don't need to know any x86-specific details or assembly language -- I'll talk about those along the way -- but it wouldn't hurt either.
 
 ## Acknowledgements
 
