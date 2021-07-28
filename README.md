@@ -48,9 +48,9 @@ Please freel free to point out errors, corrections, improvements, etc.
 11. [It's a Trap!](traps.md)
 12. [System Calls: Routing](syscalls_routing.md)
 13. [System Calls: Processes](syscalls_processes.md)
-14. Sleep-Locks
-15. Devices: Serial Port and Console Drivers (optional)
-16. Devices: Keyboard Driver (optional)
+14. Devices: Serial Port and Console Drivers (optional)
+15. Devices: Keyboard Driver (optional)
+16. [Sleep-Locks](sleep_locks.md)
 17. Devices: Disk Driver
 18. File System: Lower Layers
 19. File System: Upper Layers
