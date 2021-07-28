@@ -51,7 +51,7 @@ Please freel free to point out errors, corrections, improvements, etc.
 14. Devices: Serial Port and Console Drivers (optional)
 15. Devices: Keyboard Driver (optional)
 16. [Sleep-Locks](sleep_locks.md)
-17. Devices: Disk Driver
+17. [Devices: Disk Driver](disk.md)
 18. File System: Lower Layers
 19. File System: Upper Layers
 20. System Calls: Files
