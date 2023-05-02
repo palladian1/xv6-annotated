@@ -173,7 +173,7 @@ header file as 0x1.
 ```asm
     movl    %cr0, %eax      # Copy %cr0 into %eax
     orl     $CR0_PE, %eax   # Set bit 0
-    movl    %ax, %cr0       # Copy it back
+    movl    %eax, %cr0       # Copy it back
 ```
 
 Oh wait, I lied. Enabling protection mode like we just did doesn't change how
